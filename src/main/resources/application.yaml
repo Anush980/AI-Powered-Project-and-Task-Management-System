@@ -13,7 +13,7 @@ spring:
     driver-class-name: org.postgresql.Driver
 
 jwt:
-  secret-key: ${JWT_SECRET_KEY:}
+  secret-key: ${JWT_SECRET_KEY:lAuL52tskmXNpe9fdOyf1V7rZRuPbn2KNZbU7ebp8sHQWbPngw1U34/LZnDJ1NQKxKBmJ/21RfVaJYiwC6bubQ==}
   expiration: 7D
   issuer: aiProject
 

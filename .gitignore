@@ -38,3 +38,7 @@ build/
 
 .env
 .env*
+
+###appilcation.yml###
+application.yml
+application.yaml
