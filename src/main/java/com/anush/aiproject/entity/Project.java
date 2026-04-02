@@ -22,7 +22,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Table(name = "projects")
-public class Project extends BaseEntity{
+public class Project extends BaseEntity {
 
     private String title;
 
@@ -32,11 +32,12 @@ public class Project extends BaseEntity{
     private ProjectStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "profile_id",nullable = false)
-    private Profile profile;
+    @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
+    private User user;
 
-    @OneToMany(mappedBy = "project",cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL)
     @JsonIgnore
     private List<Task> tasks;
-    
+
 }

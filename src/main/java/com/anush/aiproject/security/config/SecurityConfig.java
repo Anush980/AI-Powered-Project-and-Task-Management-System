@@ -14,6 +14,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.anush.aiproject.security.filter.JwtAuthFilter;
+import com.anush.aiproject.shared.constants.ApiPath;
 
 import lombok.RequiredArgsConstructor;
 
@@ -34,19 +35,12 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Auth & health - public
-                        .requestMatchers("/").permitAll()
-                        .requestMatchers("/v1/auth/**").permitAll()
-                        .requestMatchers("/v1/health/**").permitAll()
-
-                        // Swagger / OpenAPI
-                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
-
-                        // Admin only
-                        .requestMatchers("/v1/admin/**").hasRole("ADMIN")
-
-                        // Everything else requires auth
-                        .anyRequest().authenticated())
+                        .requestMatchers(ApiPath.AUTH_REGISTER, ApiPath.AUTH_LOGIN).permitAll()
+                        .requestMatchers(ApiPath.HEALTH + "/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers(ApiPath.ADMIN + "/**").hasRole("ADMIN")
+                        .anyRequest().authenticated()
+                    )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

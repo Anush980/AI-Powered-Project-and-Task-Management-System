@@ -32,11 +32,8 @@ public class Profile extends BaseEntity {
     @JsonIgnore
     private User user;
 
-    @OneToMany
-    @JoinColumn(name = "profile",nullable = false)
-    private List<Project> projects;
-
     @OneToMany(mappedBy = "profile")
+    @JsonIgnore
     private List<Message> messages;
 
 }

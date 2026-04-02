@@ -2,18 +2,16 @@ package com.anush.aiproject.shared.constants;
 
 public class ApiPath {
 
-    public static final String VERSION="/v1";
-    public static final String ADMIN = "/admin";
-    public static final String PROFILE= "/profile";
-    public static final String PROJECT = "/project";
-    public static final String TASK ="/task";
-    public static final String HEALTH ="/health";
-
-    public static final String AI= "/ai";
-    public static final String LOGIN="/login";
-    public static final String REGISTER="/register";
-    public static final String LOGOUT="/logout";
-    public static final String AUTHENTICATION="/auth";
+    public static final String VERSION        = "/v1";
+    public static final String AUTH           = VERSION + "/auth"; 
+    public static final String AUTH_REGISTER  = AUTH + "/register";
+    public static final String AUTH_LOGIN     = AUTH + "/login";
+    public static final String HEALTH         = VERSION + "/health";
+    public static final String PROFILE        = VERSION + "/profile";
+    public static final String PROJECT        = VERSION + "/projects";
+    public static final String TASK           = VERSION + "/tasks";
+    public static final String AI             = VERSION + "/ai";
+    public static final String ADMIN          = VERSION + "/admin";
 
     
 }
