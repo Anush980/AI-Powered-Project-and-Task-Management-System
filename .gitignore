@@ -40,5 +40,4 @@ build/
 .env*
 
 ###appilcation.yml###
-application.yml
-application.yaml
+src/main/resources/application.yaml
