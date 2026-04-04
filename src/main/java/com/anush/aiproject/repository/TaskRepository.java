@@ -7,4 +7,6 @@ import com.anush.aiproject.entity.Task;
 public interface TaskRepository extends AbstractRepository<Task,Long> {
 
         List<Task> findByProjectId(Long projectId);
+
+        List<Task> findAllByProjectId(Long projectId);
 } 

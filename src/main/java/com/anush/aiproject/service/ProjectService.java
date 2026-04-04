@@ -8,15 +8,14 @@ import com.anush.aiproject.entity.User;
 
 public interface ProjectService {
     
-
     List<ProjectResponse> getProjects(User currentUser);
 
     ProjectResponse getProjectById(User currentUser, Long projectId);
 
-  //  ProjectResponse addProject(User currentUser, ProjectRequest request);
+    ProjectResponse addProject(User currentUser, ProjectRequest request);
 
-  //  ProjectResponse updateProject(User currentUser, Long projectId, ProjectRequest request);
+    ProjectResponse updateProject(User currentUser, Long projectId, ProjectRequest request);
 
-  //  void deleteProject(User currentUser, Long projectId);
+    void deleteProject(User currentUser, Long projectId);
 }
 

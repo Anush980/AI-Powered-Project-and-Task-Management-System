@@ -7,4 +7,6 @@ import com.anush.aiproject.entity.Subtask;
 public interface SubtaskRepository extends AbstractRepository<Subtask,Long> {
     
     List<Subtask> findByTaskId(Long taskId);
+
+    List<Subtask> findAllByTaskId(Long taskId);
 }

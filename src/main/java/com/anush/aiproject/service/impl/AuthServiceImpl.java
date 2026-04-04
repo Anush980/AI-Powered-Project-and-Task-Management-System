@@ -32,11 +32,11 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
 
-    public void register(AuthRequest request){
+    public void register(AuthRequest request) {
 
         String email = StringUtils.trim(request.getEmail().toLowerCase());
 
-        if(userRepository.existsByEmail(email)){
+        if (userRepository.existsByEmail(email)) {
             throw new ValidationException("User already exists with this email");
         }
 
@@ -47,30 +47,28 @@ public class AuthServiceImpl implements AuthService {
         user.setEmailVerified(false);
         user.setSuspended(false);
 
+        user = userRepository.saveAndFlush(user);
         savePasswordHistory(user, user.getPassword());
-
-        userRepository.save(user);
 
     }
 
-    public AuthResponse login(AuthRequest request){
-                User user = userRepository.findByEmail(request.getEmail().toLowerCase())
-                .orElseThrow(()-> new ResourceNotFoundException("User not found"));
+    public AuthResponse login(AuthRequest request) {
+        User user = userRepository.findByEmail(request.getEmail().toLowerCase())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-                if(Boolean.TRUE.equals(user.getSuspended())){
-                    throw new RequestValidationException("Account Suspended. please contact admin");
-                }
-                if(Boolean.FALSE.equals(user.getEmailVerified())){
-                    throw new RequestValidationException("Email not verififed.please check you mail");
-                }
-                try{
-                    authenticationManager.authenticate(
-                        new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
-                }
-                catch(Exception e){
-                    throw new RequestValidationException("Invalid email or password");
-                }
-                return toAuthResponse(user, jwtService.generateToken(user));
+        if (Boolean.TRUE.equals(user.getSuspended())) {
+            throw new RequestValidationException("Account Suspended. please contact admin");
+        }
+        // if (Boolean.FALSE.equals(user.getEmailVerified())) {
+        //     throw new RequestValidationException("Email not verififed.please check you mail");
+        // }
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+        } catch (Exception e) {
+            throw new RequestValidationException("Invalid email or password");
+        }
+        return toAuthResponse(user, jwtService.generateToken(user));
     }
 
     // helper

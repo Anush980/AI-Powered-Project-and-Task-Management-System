@@ -11,7 +11,7 @@ import com.anush.aiproject.shared.constants.ApiPath;
 
 
 @RestController
-@RequestMapping(ApiPath.VERSION+ApiPath.HEALTH)
+@RequestMapping(ApiPath.HEALTH)
 public class HealthController {
 
     @GetMapping
