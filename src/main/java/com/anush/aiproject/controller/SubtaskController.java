@@ -2,10 +2,13 @@ package com.anush.aiproject.controller;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -14,10 +17,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.anush.aiproject.dto.request.PaginationRequest;
 import com.anush.aiproject.dto.request.SubtaskRequest;
 import com.anush.aiproject.dto.response.ApiResponse;
+import com.anush.aiproject.dto.response.PageResponse;
 import com.anush.aiproject.dto.response.SubtaskResponse;
 import com.anush.aiproject.service.SubtaskService;
+import com.anush.aiproject.shared.util.PaginationUtil;
 import com.anush.aiproject.shared.util.SecurityUtils;
 import com.anush.aiproject.shared.constants.ApiPath;
 
@@ -35,10 +41,11 @@ public class SubtaskController {
      * GET /v1/subtasks?taskId={taskId} - Get all subtasks for a task
      */
     @GetMapping
-    public ResponseEntity<ApiResponse<List<SubtaskResponse>>> getSubtasksByTask(
-            @RequestParam Long taskId) {
+    public ResponseEntity<ApiResponse<PageResponse<SubtaskResponse>>> getSubtasksByTask(
+            @RequestParam Long taskId, @ModelAttribute PaginationRequest paginationRequest) {
         var currentUser = SecurityUtils.getCurrentUser();
-        List<SubtaskResponse> subtasks = subtaskService.getSubtasksByTask(currentUser, taskId);
+        Pageable pageable = PaginationUtil.of(paginationRequest);
+        PageResponse<SubtaskResponse> subtasks = subtaskService.getSubtasksByTask(currentUser, taskId,pageable);
         return ResponseEntity.ok(
             ApiResponse.success(subtasks, "Subtasks retrieved successfully")
         );
@@ -47,7 +54,7 @@ public class SubtaskController {
     /**
      * GET /v1/subtasks/{id} - Get subtask by ID
      */
-    @GetMapping("/{id}")
+    @GetMapping(ApiPath.ID)
     public ResponseEntity<ApiResponse<SubtaskResponse>> getSubtaskById(@PathVariable Long id) {
         var currentUser = SecurityUtils.getCurrentUser();
         SubtaskResponse subtask = subtaskService.getSubtaskById(currentUser, id);
@@ -73,7 +80,7 @@ public class SubtaskController {
     /**
      * PUT /v1/subtasks/{id} - Update subtask
      */
-    @PutMapping("/{id}")
+    @PutMapping(ApiPath.ID)
     public ResponseEntity<ApiResponse<SubtaskResponse>> updateSubtask(
             @PathVariable Long id,
             @Valid @RequestBody SubtaskRequest request) {
@@ -87,7 +94,7 @@ public class SubtaskController {
     /**
      * DELETE /v1/subtasks/{id} - Delete subtask
      */
-    @DeleteMapping("/{id}")
+    @DeleteMapping(ApiPath.ID)
     public ResponseEntity<ApiResponse<Void>> deleteSubtask(@PathVariable Long id) {
         var currentUser = SecurityUtils.getCurrentUser();
         subtaskService.deleteSubtask(currentUser, id);

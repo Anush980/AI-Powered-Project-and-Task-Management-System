@@ -2,10 +2,13 @@ package com.anush.aiproject.controller;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,11 +18,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.anush.aiproject.dto.request.PaginationRequest;
 import com.anush.aiproject.dto.request.TaskRequest;
 import com.anush.aiproject.dto.response.ApiResponse;
+import com.anush.aiproject.dto.response.PageResponse;
 import com.anush.aiproject.dto.response.TaskResponse;
 import com.anush.aiproject.service.TaskService;
 import com.anush.aiproject.shared.constants.ApiPath;
+import com.anush.aiproject.shared.util.PaginationUtil;
 import com.anush.aiproject.shared.util.SecurityUtils;
 
 import jakarta.validation.Valid;
@@ -36,10 +42,11 @@ public class TaskController {
      * GET /v1/tasks?projectId={projectId} - Get all tasks for a project
      */
     @GetMapping
-    public ResponseEntity<ApiResponse<List<TaskResponse>>> getTasksByProject(
-            @RequestParam Long projectId) {
+    public ResponseEntity<ApiResponse<PageResponse<TaskResponse>>> getTasksByProject(
+            @RequestParam Long projectId, @ModelAttribute PaginationRequest paginationRequest) {
         var currentUser = SecurityUtils.getCurrentUser();
-        List<TaskResponse> tasks = taskService.getTasksByProject(currentUser, projectId);
+        Pageable pageable = PaginationUtil.of(paginationRequest);
+        PageResponse<TaskResponse> tasks = taskService.getTasksByProject(currentUser, projectId, pageable);
         return ResponseEntity.ok(
             ApiResponse.success(tasks, "Tasks retrieved successfully")
         );
@@ -48,7 +55,7 @@ public class TaskController {
     /**
      * GET /v1/tasks/{id} - Get task by ID
      */
-    @GetMapping("/{id}")
+    @GetMapping(ApiPath.ID)
     public ResponseEntity<ApiResponse<TaskResponse>> getTaskById(@PathVariable Long id) {
         var currentUser = SecurityUtils.getCurrentUser();
         TaskResponse task = taskService.getTaskById(currentUser, id);
@@ -74,7 +81,7 @@ public class TaskController {
     /**
      * PUT /v1/tasks/{id} - Update task
      */
-    @PutMapping("/{id}")
+    @PutMapping(ApiPath.ID)
     public ResponseEntity<ApiResponse<TaskResponse>> updateTask(
             @PathVariable Long id,
             @Valid @RequestBody TaskRequest request) {
@@ -88,7 +95,7 @@ public class TaskController {
     /**
      * PATCH /v1/tasks/{id}/status?status={status} - Update task status only
      */
-    @PatchMapping("/{id}/status")
+    @PatchMapping(ApiPath.ID+ApiPath.STATUS)
     public ResponseEntity<ApiResponse<TaskResponse>> updateTaskStatus(
             @PathVariable Long id,
             @RequestParam String status) {
@@ -102,7 +109,7 @@ public class TaskController {
     /**
      * DELETE /v1/tasks/{id} - Delete task
      */
-    @DeleteMapping("/{id}")
+    @DeleteMapping(ApiPath.ID)
     public ResponseEntity<ApiResponse<Void>> deleteTask(@PathVariable Long id) {
         var currentUser = SecurityUtils.getCurrentUser();
         taskService.deleteTask(currentUser, id);

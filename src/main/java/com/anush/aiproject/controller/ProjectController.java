@@ -1,10 +1,13 @@
 package com.anush.aiproject.controller;
 
+import com.anush.aiproject.dto.request.PaginationRequest;
 import com.anush.aiproject.dto.request.ProjectRequest;
 import com.anush.aiproject.dto.response.ApiResponse;
+import com.anush.aiproject.dto.response.PageResponse;
 import com.anush.aiproject.dto.response.ProjectResponse;
 import com.anush.aiproject.service.ProjectService;
 import com.anush.aiproject.shared.constants.ApiPath;
+import com.anush.aiproject.shared.util.PaginationUtil;
 import com.anush.aiproject.shared.util.SecurityUtils;
 
 import jakarta.validation.Valid;
@@ -12,10 +15,13 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -35,18 +41,17 @@ public class ProjectController {
      * GET /v1/projects - Get all projects for current user
      */
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ProjectResponse>>> getAllProjects() {
+    public ResponseEntity<ApiResponse<PageResponse<ProjectResponse>>> getAllProjects(@ModelAttribute PaginationRequest paginationRequest) {
         var currentUser = SecurityUtils.getCurrentUser();
-        List<ProjectResponse> projects = projectService.getProjects(currentUser);
-        return ResponseEntity.ok(
-            ApiResponse.success(projects, "Projects retrieved successfully")
-        );
+        Pageable pageable = PaginationUtil.of(paginationRequest);
+        PageResponse<ProjectResponse> projects = projectService.getProjects(currentUser, pageable);
+        return ResponseEntity.ok(ApiResponse.success(projects, "Projects retrieved successfully"));
     }
 
     /**
      * GET /v1/projects/{id} - Get project by ID
      */
-    @GetMapping("/{id}")
+    @GetMapping(ApiPath.ID)
     public ResponseEntity<ApiResponse<ProjectResponse>> getProjectById(@PathVariable Long id) {
         var currentUser = SecurityUtils.getCurrentUser();
         ProjectResponse project = projectService.getProjectById(currentUser, id);
@@ -71,7 +76,7 @@ public class ProjectController {
     /**
      * PUT /v1/projects/{id} - Update project
      */
-    @PutMapping("/{id}")
+    @PutMapping(ApiPath.ID)
     public ResponseEntity<ApiResponse<ProjectResponse>> updateProject(
             @PathVariable Long id,
             @Valid @RequestBody ProjectRequest request) {
@@ -85,7 +90,7 @@ public class ProjectController {
     /**
      * DELETE /v1/projects/{id} - Delete project
      */
-    @DeleteMapping("/{id}")
+    @DeleteMapping(ApiPath.ID)
     public ResponseEntity<ApiResponse<Void>> deleteProject(@PathVariable Long id) {
         var currentUser = SecurityUtils.getCurrentUser();
         projectService.deleteProject(currentUser, id);
