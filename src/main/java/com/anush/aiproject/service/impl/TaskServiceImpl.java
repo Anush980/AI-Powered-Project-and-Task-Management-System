@@ -2,10 +2,13 @@ package com.anush.aiproject.service.impl;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.anush.aiproject.dto.request.TaskRequest;
+import com.anush.aiproject.dto.response.PageResponse;
 import com.anush.aiproject.dto.response.TaskResponse;
 import com.anush.aiproject.entity.Project;
 import com.anush.aiproject.entity.Task;
@@ -30,17 +33,25 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<TaskResponse> getTasksByProject(User currentUser, Long projectId) {
+    public PageResponse<TaskResponse> getTasksByProject(User currentUser, Long projectId,Pageable pageable) {
         var user = userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        // Verify project belongs to user
-        Project project = projectRepository.findById(projectId)
+                // Verify project belongs to user
+                projectRepository.findById(projectId)
                 .filter(p -> p.getUser().getId().equals(user.getId()))
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found or access denied"));
 
-        List<Task> tasks = taskRepository.findAllByProjectId(projectId);
-        return tasks.stream().map(this::toResponse).toList();
+        Page<Task> page = taskRepository.findAllByProjectId(projectId,pageable);
+        return PageResponse.<TaskResponse>builder()
+                                .content(page.getContent().stream().map(this::toResponse).toList())
+                                .page(page.getNumber())
+                                .size(page.getSize())
+                                .totalElements(page.getTotalElements())
+                                .totalPages(page.getTotalPages())
+                                .hasNext(page.hasNext())
+                                .hasPrevious(page.hasPrevious())
+                                .build();
     }
 
     @Override

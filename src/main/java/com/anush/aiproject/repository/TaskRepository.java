@@ -2,11 +2,14 @@ package com.anush.aiproject.repository;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import com.anush.aiproject.entity.Task;
 
 public interface TaskRepository extends AbstractRepository<Task,Long> {
 
         List<Task> findByProjectId(Long projectId);
 
-        List<Task> findAllByProjectId(Long projectId);
+        Page<Task> findAllByProjectId(Long projectId, Pageable pageable);
 } 
