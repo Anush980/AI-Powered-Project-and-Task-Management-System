@@ -1,0 +1,20 @@
+package com.anush.aiproject.shared.config;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import com.resend.Resend;
+
+@Configuration
+public class ResendEmailConfig {
+
+    @Value("${spring.mail.resend.api-key}")
+    private String apiKey ;
+
+    @Bean
+    public Resend resendApiKey() {
+        return new Resend(apiKey);
+    }
+    
+}

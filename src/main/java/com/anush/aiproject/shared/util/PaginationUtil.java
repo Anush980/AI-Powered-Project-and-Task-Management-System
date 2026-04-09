@@ -16,6 +16,7 @@ public class PaginationUtil {
     private static final int DEFAULT_PAGE_NUMBER = 0;
     private static final int MAX_PAGE_SIZE = 50;
 
+    @SuppressWarnings("null")
     public Pageable of(PaginationRequest request) {
         if (request == null) {
             return PageRequest.of(DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE);
