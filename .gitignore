@@ -39,5 +39,6 @@ build/
 .env
 .env*
 
-###appilcation.yml###
-src/main/resources/application.yaml
+# Ignore Spring config files
+src/main/resources/application-*.yaml
+

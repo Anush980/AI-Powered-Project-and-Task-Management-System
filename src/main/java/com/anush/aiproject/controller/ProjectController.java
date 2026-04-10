@@ -1,6 +1,7 @@
 package com.anush.aiproject.controller;
 
 import com.anush.aiproject.dto.request.PaginationRequest;
+import com.anush.aiproject.dto.request.ProjectFilterRequest;
 import com.anush.aiproject.dto.request.ProjectRequest;
 import com.anush.aiproject.dto.response.ApiResponse;
 import com.anush.aiproject.dto.response.PageResponse;
@@ -13,9 +14,6 @@ import com.anush.aiproject.shared.util.SecurityUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-import java.util.List;
-
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -41,10 +39,15 @@ public class ProjectController {
      * GET /v1/projects - Get all projects for current user
      */
     @GetMapping
-    public ResponseEntity<ApiResponse<PageResponse<ProjectResponse>>> getAllProjects(@ModelAttribute PaginationRequest paginationRequest) {
+    public ResponseEntity<ApiResponse<PageResponse<ProjectResponse>>> getAllProjects(
+        @ModelAttribute ProjectFilterRequest filter,
+        @ModelAttribute PaginationRequest paginationRequest) {
+
         var currentUser = SecurityUtils.getCurrentUser();
         Pageable pageable = PaginationUtil.of(paginationRequest);
-        PageResponse<ProjectResponse> projects = projectService.getProjects(currentUser, pageable);
+
+        PageResponse<ProjectResponse> projects = projectService.getProjects(currentUser, filter,pageable);
+        
         return ResponseEntity.ok(ApiResponse.success(projects, "Projects retrieved successfully"));
     }
 

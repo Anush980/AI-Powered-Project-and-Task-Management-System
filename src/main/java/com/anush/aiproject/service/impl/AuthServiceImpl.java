@@ -14,6 +14,7 @@ import com.anush.aiproject.entity.User;
 import com.anush.aiproject.repository.UserRepository;
 import com.anush.aiproject.security.filter.JwtService;
 import com.anush.aiproject.service.AuthService;
+import com.anush.aiproject.service.EmailFacade;
 import com.anush.aiproject.shared.constants.UserRole;
 import com.anush.aiproject.shared.exception.RequestValidationException;
 import com.anush.aiproject.shared.exception.ResourceNotFoundException;
@@ -26,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
+    private final EmailFacade emailFacade;
     private final PasswordHistoryRepository passwordHistoryRepository;
     private final JwtService jwtService;
     private final UserRepository userRepository;
@@ -49,6 +51,8 @@ public class AuthServiceImpl implements AuthService {
 
         user = userRepository.saveAndFlush(user);
         savePasswordHistory(user, user.getPassword());
+
+        emailFacade.sendWelcomeEmail(user.getEmail(), user.getEmail());
 
     }
 

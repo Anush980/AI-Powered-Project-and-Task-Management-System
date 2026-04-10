@@ -1,10 +1,8 @@
 package com.anush.aiproject.service;
 
-import java.util.List;
-
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import com.anush.aiproject.dto.request.SubtaskFilterRequest;
 import com.anush.aiproject.dto.request.SubtaskRequest;
 import com.anush.aiproject.dto.response.PageResponse;
 import com.anush.aiproject.dto.response.SubtaskResponse;
@@ -12,7 +10,7 @@ import com.anush.aiproject.entity.User;
 
 public interface SubtaskService {
     
-    PageResponse<SubtaskResponse> getSubtasksByTask(User currentUser, Long taskId,Pageable pageable);
+    PageResponse<SubtaskResponse> getSubtasksByTask(User currentUser, Long taskId, SubtaskFilterRequest filter, Pageable pageable);
     
     SubtaskResponse getSubtaskById(User currentUser, Long subtaskId);
     

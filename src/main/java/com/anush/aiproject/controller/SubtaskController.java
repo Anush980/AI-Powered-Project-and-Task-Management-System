@@ -1,8 +1,5 @@
 package com.anush.aiproject.controller;
 
-import java.util.List;
-
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.anush.aiproject.dto.request.PaginationRequest;
+import com.anush.aiproject.dto.request.SubtaskFilterRequest;
 import com.anush.aiproject.dto.request.SubtaskRequest;
 import com.anush.aiproject.dto.response.ApiResponse;
 import com.anush.aiproject.dto.response.PageResponse;
@@ -42,10 +40,12 @@ public class SubtaskController {
      */
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<SubtaskResponse>>> getSubtasksByTask(
-            @RequestParam Long taskId, @ModelAttribute PaginationRequest paginationRequest) {
+            @RequestParam Long taskId,
+                @ModelAttribute SubtaskFilterRequest filter,
+             @ModelAttribute PaginationRequest paginationRequest) {
         var currentUser = SecurityUtils.getCurrentUser();
         Pageable pageable = PaginationUtil.of(paginationRequest);
-        PageResponse<SubtaskResponse> subtasks = subtaskService.getSubtasksByTask(currentUser, taskId,pageable);
+        PageResponse<SubtaskResponse> subtasks = subtaskService.getSubtasksByTask(currentUser, taskId, filter, pageable);
         return ResponseEntity.ok(
             ApiResponse.success(subtasks, "Subtasks retrieved successfully")
         );
