@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.anush.aiproject.dto.request.TaskFilterRequest;
 import com.anush.aiproject.dto.request.TaskRequest;
 import com.anush.aiproject.dto.response.PageResponse;
 import com.anush.aiproject.dto.response.TaskResponse;
@@ -18,6 +19,7 @@ import com.anush.aiproject.service.TaskService;
 import com.anush.aiproject.shared.constants.TaskStatus;
 import com.anush.aiproject.shared.exception.BadRequestException;
 import com.anush.aiproject.shared.exception.ResourceNotFoundException;
+import com.anush.aiproject.specification.TaskSpecification;
 
 import lombok.RequiredArgsConstructor;
 
@@ -31,7 +33,7 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<TaskResponse> getTasksByProject(User currentUser, Long projectId,Pageable pageable) {
+    public PageResponse<TaskResponse> getTasksByProject(User currentUser, Long projectId,TaskFilterRequest filter,Pageable pageable) {
         var user = userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
@@ -40,7 +42,9 @@ public class TaskServiceImpl implements TaskService {
                 .filter(p -> p.getUser().getId().equals(user.getId()))
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found or access denied"));
 
-        Page<Task> page = taskRepository.findAllByProjectId(projectId,pageable);
+                var spec = TaskSpecification.build(projectId, filter);
+
+        Page<Task> page = taskRepository.findAll(spec, pageable);
         return PageResponse.<TaskResponse>builder()
                                 .content(page.getContent().stream().map(this::toResponse).toList())
                                 .page(page.getNumber())

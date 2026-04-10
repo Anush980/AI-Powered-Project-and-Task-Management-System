@@ -3,6 +3,7 @@ package com.anush.aiproject.service.impl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.anush.aiproject.dto.request.ProjectFilterRequest;
 import com.anush.aiproject.dto.request.ProjectRequest;
 import com.anush.aiproject.dto.response.PageResponse;
 import com.anush.aiproject.dto.response.ProjectResponse;
@@ -18,6 +19,8 @@ import com.anush.aiproject.service.ProjectService;
 import com.anush.aiproject.shared.constants.ProjectStatus;
 import com.anush.aiproject.shared.constants.TaskStatus;
 import com.anush.aiproject.shared.exception.ResourceNotFoundException;
+import com.anush.aiproject.specification.ProjectSpecification;
+
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -29,15 +32,21 @@ public class ProjectServiceImpl implements ProjectService {
 
         @Override
         @Transactional(readOnly = true)
-        public PageResponse<ProjectResponse> getProjects(User currentUser, Pageable pageable) {
+        public PageResponse<ProjectResponse> getProjects(User currentUser, ProjectFilterRequest filter,
+                        Pageable pageable) {
 
                 Long userId = currentUser.getId();
                 if (userId == null)
                         throw new ResourceNotFoundException("User not found");
-                var user = userRepository.findById(userId)
-                                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-                Page<Project> page = projectRepository.findAllByUserId(user.getId(), pageable);
+                if (!userRepository.existsById(userId)) {
+                        throw new ResourceNotFoundException("User not found");
+                }
+
+                 var spec = ProjectSpecification.build(userId, filter);
+
+                Page<Project> page = projectRepository.findAll(spec, pageable);
+                
                 return PageResponse.<ProjectResponse>builder()
                                 .content(page.getContent().stream().map(this::toResponse).toList())
                                 .page(page.getNumber())

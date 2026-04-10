@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.anush.aiproject.dto.request.SubtaskFilterRequest;
 import com.anush.aiproject.dto.request.SubtaskRequest;
 import com.anush.aiproject.dto.response.PageResponse;
 import com.anush.aiproject.dto.response.SubtaskResponse;
@@ -17,6 +18,7 @@ import com.anush.aiproject.repository.UserRepository;
 import com.anush.aiproject.service.SubtaskService;
 import com.anush.aiproject.shared.constants.TaskStatus;
 import com.anush.aiproject.shared.exception.ResourceNotFoundException;
+import com.anush.aiproject.specification.SubtaskSpecification;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +33,7 @@ public class SubtaskServiceImpl implements SubtaskService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<SubtaskResponse> getSubtasksByTask(User currentUser, Long taskId,@NotNull Pageable pageable) {
+    public PageResponse<SubtaskResponse> getSubtasksByTask(User currentUser, Long taskId, SubtaskFilterRequest filter, @NotNull Pageable pageable) {
         var user = userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
@@ -43,7 +45,9 @@ public class SubtaskServiceImpl implements SubtaskService {
             throw new ResourceNotFoundException("Task not found or access denied");
         }
 
-        Page<Subtask> page = subtaskRepository.findAllByTaskId(taskId,pageable);
+        var spec = SubtaskSpecification.build(taskId, filter);
+        Page<Subtask> page = subtaskRepository.findAll(spec, pageable);
+        
         return PageResponse.<SubtaskResponse>builder()
                                 .content(page.getContent().stream().map(this::toResponse).toList())
                                 .page(page.getNumber())
