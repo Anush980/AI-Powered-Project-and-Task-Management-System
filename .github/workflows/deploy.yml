@@ -1,0 +1,213 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# FILE: .github/workflows/deploy.yml
+#
+# Your setup:  EC2 + ECR + RDS (Postgres) + IAM user keys
+# Trigger:     push to master branch
+# Pipeline:    test → build+push to ECR → SSH deploy to EC2
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: CI/CD → Deploy to AWS
+
+# ── WHEN TO RUN ───────────────────────────────────────────────────────────────
+on:
+  push:
+    branches: [ master ]         # ← your branch
+  pull_request:
+    branches: [ master ]         # tests also run on PRs, but deploy does not
+
+# ── SHARED ENV VARS ───────────────────────────────────────────────────────────
+# Build the ECR URL once here — reused in both build and deploy jobs.
+# Format: {account-id}.dkr.ecr.{region}.amazonaws.com
+env:
+  ECR_REGISTRY:   ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+  ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+
+jobs:
+
+# ─────────────────────────────────────────────────────────────────────────────
+# JOB 1 — TEST
+# GitHub spins up a fresh Ubuntu VM, installs Java, runs your tests.
+# If any @Test fails → this job fails → build + deploy never run.
+# ─────────────────────────────────────────────────────────────────────────────
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Get your code onto the GitHub VM
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Install Java 17 + automatically cache ~/.m2/repository
+      #    Cache key = hash of pom.xml, so if pom.xml is unchanged
+      #    Maven skips the download and restores from cache (~2 min saved)
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      # 3. Run every @Test in your project
+      #    If any test fails → exit code 1 → job marked FAILED → stops here
+      - name: Run tests
+        run: mvn -B test --no-transfer-progress
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# JOB 2 — BUILD & PUSH TO ECR
+# Builds Docker image tagged with the commit SHA, pushes to your ECR repo.
+# Only runs on actual push to master (not on pull requests).
+# ─────────────────────────────────────────────────────────────────────────────
+  build-and-push:
+    name: Build & Push
+    runs-on: ubuntu-latest
+    needs: test                  # wait for tests to pass
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+
+    outputs:
+      image-tag: ${{ steps.tag.outputs.sha }}   # pass the SHA to deploy job
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Authenticate GitHub's VM to your AWS account using your IAM user keys
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ secrets.AWS_REGION }}
+
+      # Get a 12-hour ECR token and run `docker login` with it automatically
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Shorten the 40-char commit SHA to 7 chars for a clean image tag
+      # e.g.  a3f9b12  →  used as  your-ecr-url/aiproject:a3f9b12
+      - name: Generate image tag
+        id: tag
+        run: |
+          SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          echo "sha=$SHA" >> $GITHUB_OUTPUT
+          echo "Image tag: $SHA"
+
+      # Pull the previous `latest` to use as a build cache layer.
+      # If pom.xml hasn't changed since last push, the dependency layer
+      # is already in the cached image → Docker skips re-downloading jars.
+      # `|| true` = don't fail if this is the very first build (no latest yet).
+      - name: Pull cache image
+        run: |
+          docker pull ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest || true
+
+      - name: Build image
+        run: |
+          docker build \
+            --cache-from ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest \
+            --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ steps.tag.outputs.sha }} \
+            --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest \
+            .
+
+      - name: Push to ECR
+        run: |
+          docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ steps.tag.outputs.sha }}
+          docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+          echo "✓ Pushed: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ steps.tag.outputs.sha }}"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# JOB 3 — DEPLOY TO EC2
+# SSHs into your EC2, pulls the exact image just pushed, restarts container.
+# RDS note: Spring Boot connects to RDS on startup — we wait up to 90s
+#           for the health check to pass (RDS connection adds ~5-10s).
+# ─────────────────────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+
+    steps:
+      - name: SSH deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host:     ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key:      ${{ secrets.EC2_SSH_KEY }}
+          port:     22
+          timeout:  120s
+
+          # ── Runs on your EC2 ───────────────────────────────────────────────
+          script: |
+            set -e   # stop immediately if any command fails
+
+            REGISTRY="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com"
+            IMAGE="$REGISTRY/${{ secrets.ECR_REPOSITORY }}:${{ needs.build-and-push.outputs.image-tag }}"
+            CONTAINER="aiproject"
+
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "Deploying: $IMAGE"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+            # 1. Authenticate EC2 → ECR using the instance's IAM role
+            #    (No passwords needed — IAM role handles it)
+            aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
+              | docker login --username AWS --password-stdin $REGISTRY
+            echo "✓ ECR login"
+
+            # 2. Pull the new image FIRST — before stopping the old container.
+            #    If pull fails (network issue etc), old container keeps running.
+            docker pull $IMAGE
+            echo "✓ Pulled new image"
+
+            # 3. Stop old container. Ignore errors if it doesn't exist yet.
+            docker stop $CONTAINER 2>/dev/null || true
+            docker rm   $CONTAINER 2>/dev/null || true
+            echo "✓ Stopped old container"
+
+            # 4. Start new container with your prod environment variables.
+            #    --restart=always  → auto-restart if EC2 reboots
+            #    --memory=700m     → hard RAM limit for t3.micro (1GB total)
+            #    --cpus=0.9        → leave 10% CPU for the OS
+            #    RDS runs on its own server so no port mapping needed for DB.
+            docker run \
+              --detach \
+              --name $CONTAINER \
+              --restart=always \
+              --memory=700m \
+              --cpus=0.9 \
+              -p 8080:8080 \
+              -e SPRING_PROFILES_ACTIVE=prod \
+              -e DB_URL="${{ secrets.DB_URL }}" \
+              -e DB_USERNAME="${{ secrets.DB_USERNAME }}" \
+              -e DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
+              -e JWT_SECRET_KEY="${{ secrets.JWT_SECRET_KEY }}" \
+              $IMAGE
+            echo "✓ Started new container"
+
+            # 5. Wait for Spring Boot + RDS connection to be ready.
+            #    Spring Boot on t3.micro with RDS takes ~20-40s to start.
+            #    We poll /v1/health every 5s, give up after 90s.
+            echo "Waiting for app to be healthy..."
+            ELAPSED=0
+            until curl -sf http://localhost:8080/v1/health > /dev/null 2>&1; do
+              if [ $ELAPSED -ge 90 ]; then
+                echo "✗ Health check failed after 90s — showing logs:"
+                docker logs $CONTAINER --tail 60
+                exit 1
+              fi
+              sleep 5
+              ELAPSED=$((ELAPSED + 5))
+              echo "  ${ELAPSED}s..."
+            done
+            echo "✓ App is healthy"
+
+            # 6. Clean up old/dangling images to save disk space on EC2.
+            #    t3.micro has 8GB — without this it fills up after ~10 deploys.
+            docker image prune -f
+            echo "✓ Cleaned up old images"
+
+            echo ""
+            echo " Deploy complete!"
+            docker ps --filter name=$CONTAINER --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
