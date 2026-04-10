@@ -17,7 +17,7 @@ spring:
   
   mail:
     resend:
-      api-key: ${RESEND_API_KEY}
+      api-key: ${RESEND_API_KEY:}
 
 jwt:
   secret-key: ${JWT_SECRET_KEY}
