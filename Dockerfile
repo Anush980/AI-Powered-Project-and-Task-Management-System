@@ -26,7 +26,7 @@ WORKDIR /app
 COPY src ./src
 # -DskipTests → tests already ran in GitHub Actions, don't run again here
 # -DfinalName=app → always outputs target/app.jar, not target/aiproject-0.0.1-SNAPSHOT.jar
-RUN mvn package -DskipTests -q -DfinalName=app
+RUN mvn clean package -DskipTests
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -46,7 +46,7 @@ RUN mvn package -DskipTests -q -DfinalName=app
 FROM eclipse-temurin:17-jre-alpine AS extractor
 WORKDIR /app
 
-COPY --from=builder /app/target/app.jar app.jar
+COPY --from=builder /app/target/*.jar app.jar
 RUN java -Djarmode=layertools -jar app.jar extract
 
 
