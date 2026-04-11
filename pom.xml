@@ -127,7 +127,7 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
-
+<packaging>jar</packaging>
 	<build>
 		<finalName>app</finalName>
 		<plugins>
