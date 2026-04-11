@@ -104,7 +104,7 @@ jobs:
       - name: Build image
         run: |
           docker build \
-            --cache-from ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest \
+            --no-cache \                          # ← add this
             --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ steps.tag.outputs.sha }} \
             --tag ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest \
             .
