@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+
+  mail:
+    resend:
+      api-key: ${RESEND_API_KEY:dummy_api_key_for_testing}
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+
+jwt:
+  secret-key: ${JWT_SECRET_KEY:dummy_jwt_secret_key_for_testing}
+  expiration: 7D
+  issuer: aiProject
