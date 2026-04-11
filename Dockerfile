@@ -26,7 +26,7 @@ WORKDIR /app
 COPY src ./src
 # -DskipTests → tests already ran in GitHub Actions, don't run again here
 # -DfinalName=app → always outputs target/app.jar, not target/aiproject-0.0.1-SNAPSHOT.jar
-RUN mvn clean package -DskipTests
+RUN mvn clean package spring-boot:repackage -DskipTests
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
