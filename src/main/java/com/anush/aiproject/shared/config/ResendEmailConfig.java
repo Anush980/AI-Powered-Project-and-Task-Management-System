@@ -1,20 +1,22 @@
 package com.anush.aiproject.shared.config;
 
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.resend.Resend;
 
+import lombok.RequiredArgsConstructor;
+
 @Configuration
+@EnableConfigurationProperties(ResendProperties.class)
+@RequiredArgsConstructor
 public class ResendEmailConfig {
 
-    @Value("${spring.mail.resend.api-key}")
-    private String apiKey ;
+    private final ResendProperties props;
 
     @Bean
     public Resend resendApiKey() {
-        return new Resend(apiKey);
+        return new Resend(props.getApiKey());
     }
-    
 }
